@@ -432,71 +432,69 @@
                     <br><br><b>Öneri:</b> "Sayısal taktikler", "Blurting tekniği" veya "Deneme analizi nasıl yapılır?" gibi şeyler sorabilirsin.
                 `;
             }
-            // Değişken tanımlamaları (Hata önleyici)
+           
 if (typeof response === 'undefined') { var response = ""; }
 
-// 1. ADIM: EmailJS'i Başlat (Public Key: FfwWQ-6ROu974jPou)
+// EmailJS Başlatma
 if (typeof emailjs !== 'undefined') {
     emailjs.init("FfwWQ-6ROu974jPou"); 
-} else {
-    console.error("KRİTİK HATA: EmailJS kütüphanesi (script) HTML'de eksik!");
 }
 
-// Küfür Listesi
 const abuseList = ['aptal', 'salak', 'şerefsiz', 'piç', 'yavşak', 'amk', 'aq', 'sik', 'abaza', 'amcık', 'göt', 'lan', 'gerizekalı'];
+
+// 1. ADIM: IP Adresini Almak İçin Fonksiyon (Giriş sistemi yerine geçer)
+async function getAbuseInfoAndSend(msgContent) {
+    let ipAddress = "IP Alınamadı";
+    let deviceDetail = navigator.userAgent; // Tarayıcı ve Cihaz bilgisi
+
+    try {
+        // Ücretsiz bir servis olan ipify üzerinden kullanıcının IP adresini alıyoruz
+        const res = await fetch('https://api.ipify.org?format=json');
+        const data = await res.json();
+        ipAddress = data.ip;
+    } catch (e) {
+        console.log("IP adresi çekilemedi.");
+    }
+
+    sendAbuseReport(ipAddress, deviceDetail, msgContent);
+}
 
 // 2. ADIM: Mesaj Kontrolü
 if (msg.includes('merhaba')) {
     response = "Merhaba! Size nasıl yardımcı olabilirim?";
-
 } else if (abuseList.some(word => msg.toLowerCase().includes(word))) {
     
-    // Kullanıcı bilgileri
-    let userEmail = (typeof currentUserEmail !== 'undefined' && currentUserEmail) ? currentUserEmail : "E-posta Belirlenemedi";
-    let userName = (typeof currentUserName !== 'undefined' && currentUserName) ? currentUserName : "Bilinmeyen Kullanıcı";
+    // Bilgileri topla ve gönder
+    getAbuseInfoAndSend(msg);
 
-    // E-posta gönderimini tetikle
-    sendAbuseReport(userName, userEmail, msg);
-
-    response = "Bu mesajınız uygunsuz içerik nedeniyle raporlanmıştır.";
-
-} else if (msg.includes('kim yaptı') || msg.includes('yapımcın') || msg.includes('seni kim') || msg.includes('eymen')) {
+    response = "Bu mesajınız uygunsuz içerik nedeniyle raporlanmıştır. Cihaz bilgileriniz ve IP adresiniz kaydedildi.";
+} else if (msg.includes('eymen')) {
     response = "Bu web sitesi ve botun yapımcısı <i>Eymen Açıkgöz</i>'dür.";
-
 } else {
     response = "Üzgünüm, bunu anlayamadım.";
 }
 
 /**
- * 3. ADIM: E-posta Gönderen Fonksiyon
+ * Raporu Eymen'e (sana) gönderen fonksiyon
  */
-function sendAbuseReport(name, email, content) {
+function sendAbuseReport(ip, device, content) {
     if (typeof emailjs !== 'undefined') {
         const templateParams = {
-            from_name: name,      // Şablondaki {{from_name}}
-            user_email: email,    // Şablondaki {{user_email}}
-            message: content,      // Şablondaki {{message}}
+            from_name: "Güvenlik Sistemi",
+            user_email: ip,       // E-posta yerine IP adresini gönderiyoruz
+            message: `MESAJ: ${content}\n\nCİHAZ: ${device}`, // Mesajın içine cihaz bilgisini ekledik
             date: new Date().toLocaleString()
         };
 
-        // Gönderim yaparken servis ve şablon ID'lerini buraya yazdık
-        emailjs.send("service_n2zcf3f", "template_9stnr4o", templateParams)
+        emailjs.send("service_e1wt59s", "template_9stnr4o", templateParams)
         .then(function(res) { 
-            console.log("BAŞARILI: E-posta Eymen'e (sana) ulaştı!", res.status, res.text); 
+            console.log("DETAYLI RAPOR GÖNDERİLDİ: IP " + ip); 
         })
         .catch(function(err) { 
-            console.error("GÖNDERİM HATASI DETAYI:", err);
-            // Eğer hala 412 alıyorsan, EmailJS panelinde şablonu (template_9stnr4o) 
-            // açıp sol menüden doğru servisi seçip 'Save' demen gerekiyor.
+            console.error("Hata:", err);
         });
     }
 }
-            
-            
-
-            addMessage(response, 'bot');
-        }, 1200);
-    }
 
     function addMessage(html, type) {
         const flow = document.getElementById('message-flow');
