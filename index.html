@@ -443,26 +443,21 @@ if (typeof emailjs !== 'undefined') {
 const abuseList = ['aptal', 'salak', 'şerefsiz', 'piç', 'yavşak', 'amk', 'aq', 'sik', 'abaza', 'amcık', 'göt', 'lan', 'gerizekalı'];
 
 /**
- * 1. ADIM: IP Adresini Al ve Raporu Gönder
- * Bu fonksiyon, IP gelene kadar bekler (await) ve sonra maili tetikler.
+ * 1. ADIM: IP ve Raporlama Fonksiyonu
  */
-async function processAbuseReport(msgContent) {
-    let ipAddress = "IP Tespit Edilemedi";
+function processAbuseReport(msgContent) {
     let deviceDetail = navigator.userAgent;
-
-    try {
-        // Daha hızlı ve güvenilir bir IP servisi deniyoruz
-        const res = await fetch('https://api.ipify.org?format=json');
-        if (res.ok) {
-            const data = await res.json();
-            ipAddress = data.ip;
-        }
-    } catch (e) {
-        console.error("IP adresi alınırken hata oluştu:", e);
-    }
-
-    // Bilgileri EmailJS'e gönder
-    sendAbuseReport(ipAddress, deviceDetail, msgContent);
+    
+    // IP adresini çekmeye çalışıyoruz
+    fetch('https://api.ipify.org?format=json')
+        .then(res => res.json())
+        .then(data => {
+            sendAbuseReport(data.ip, deviceDetail, msgContent);
+        })
+        .catch(err => {
+            console.warn("IP alınamadı, anonim gönderiliyor...");
+            sendAbuseReport("IP Tespit Edilemedi", deviceDetail, msgContent);
+        });
 }
 
 // 2. ADIM: Mesaj Kontrolü
@@ -473,7 +468,7 @@ if (msg.includes('merhaba')) {
     // Raporlama işlemini başlat
     processAbuseReport(msg);
 
-    response = "Bu mesajınız uygunsuz içerik nedeniyle raporlanmıştır. Güvenlik protokolü gereği IP adresiniz ve cihaz bilgileriniz iletildi.";
+    response = "Bu mesajınız uygunsuz içerik nedeniyle raporlanmıştır. Güvenlik protokolü gereği cihaz bilgileriniz iletildi.";
 } else if (msg.includes('eymen')) {
     response = "Bu web sitesi ve botun yapımcısı <i>Eymen Açıkgöz</i>'dür.";
 } else {
@@ -485,17 +480,16 @@ if (msg.includes('merhaba')) {
  */
 function sendAbuseReport(ip, device, content) {
     if (typeof emailjs !== 'undefined') {
-        // EmailJS şablonuna gidecek veriler
         const templateParams = {
             from_name: "BOT GÜVENLİK",
-            user_email: ip, // Şablonunda {{user_email}} yazan yere IP düşecek
+            user_email: ip, 
             message: `KÜFÜR: ${content}\n\nIP ADRESİ: ${ip}\n\nCİHAZ BİLGİSİ: ${device}`,
             date: new Date().toLocaleString()
         };
 
         emailjs.send("service_e1wt59s", "template_9stnr4o", templateParams)
         .then(function(res) { 
-            console.log("İŞLEM BAŞARILI: IP (" + ip + ") raporu gönderildi."); 
+            console.log("İŞLEM BAŞARILI: Rapor gönderildi."); 
         })
         .catch(function(err) { 
             console.error("MAİL GÖNDERİM HATASI:", err);
